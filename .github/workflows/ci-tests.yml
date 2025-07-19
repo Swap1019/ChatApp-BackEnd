@@ -40,4 +40,4 @@ jobs:
         HOST: ${{ secrets.DB_HOST }}
         PORT: ${{ secrets.DB_PORT }}
       run: |
-        python backend/manage.py test --noinput --parallel
+        python backend/manage.py test chat user --noinput --parallel

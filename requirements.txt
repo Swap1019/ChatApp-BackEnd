@@ -3,5 +3,6 @@ django
 pillow
 psycopg2-binary
 sqlparse
+python-dotenv
 tblib
 uuid
