@@ -2,7 +2,6 @@ asgiref
 django
 pillow
 psycopg2-binary
-python-dotenv
 sqlparse
 tblib
 uuid
