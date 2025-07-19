@@ -40,9 +40,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Test db connection
+    - name: Drop test database if exists
       run: |
-        PGPASSWORD=$PASSWORD psql -h $HOST -U $USER2 -d $NAME -c '\dt'
+        PGPASSWORD=$PASSWORD psql -h $HOST -U $USER2 -d $NAME -c "DROP DATABASE IF EXISTS test_$NAME;"
 
     - name: Run Migrations
       run: |
