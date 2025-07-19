@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      [main, dev]
   pull_request:
     branches:
-      - main
+      [main, dev]
 
 jobs:
   build:
@@ -40,4 +40,5 @@ jobs:
         HOST: ${{ secrets.DB_HOST }}
         PORT: ${{ secrets.DB_PORT }}
       run: |
+        echo $HOST
         python backend/manage.py test chat user --noinput --parallel
