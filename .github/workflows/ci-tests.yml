@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: secrets
-    
+
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       NAME: ${{ secrets.DB_NAME }}
@@ -42,8 +42,8 @@ jobs:
 
     - name: Run Migrations
       run: |
-        python manage.py makemigrations --noinput
-        python manage.py migrate --noinput
+        python manage.py backend/makemigrations --noinput
+        python manage.py backend/migrate --noinput
 
     - name: Run Tests
       run: |
