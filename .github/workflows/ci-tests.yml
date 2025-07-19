@@ -51,4 +51,5 @@ jobs:
 
     - name: Run Tests
       run: |
+        python backend/manage.py migrate --noinput
         python backend/manage.py test chat user --noinput --parallel --keepdb
