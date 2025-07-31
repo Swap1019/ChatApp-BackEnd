@@ -1,8 +1,15 @@
 asgiref
 django
+django-cors-headers
+djangorestframework
+djangorestframework-simplejwt
 pillow
+pip
 psycopg2-binary
-sqlparse
+pyjwt
 python-dotenv
+setuptools
+sqlparse
 tblib
 uuid
+wheel
