@@ -3,10 +3,16 @@ django
 django-cors-headers
 djangorestframework
 djangorestframework-simplejwt
+iniconfig
+packaging
 pillow
 pip
+pluggy
 psycopg2-binary
+pygments
 pyjwt
+pytest
+pytest-django
 python-dotenv
 setuptools
 sqlparse
