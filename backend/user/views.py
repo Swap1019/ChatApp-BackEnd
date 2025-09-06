@@ -35,7 +35,6 @@ class CreateUserView(CreateAPIView):
 
 
 class RetrieveUpdateDeleteUser(RetrieveUpdateDestroyAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
