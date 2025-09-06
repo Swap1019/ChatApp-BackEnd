@@ -40,6 +40,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Test db connection
+      run: |
+        PGPASSWORD=$PASSWORD psql -h $HOST -U $USER2 -d $NAME -c '\dt'
+
     - name: Run Tests
       run: |
         pytest backend/
