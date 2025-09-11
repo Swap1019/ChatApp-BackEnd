@@ -21,6 +21,9 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True,verbose_name="Sent at")
     is_read = models.BooleanField(default=False,verbose_name="Seen status")
 
+    class Meta:
+        ordering = ['created_at']
+
 class Contact(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owner")
     contact = models.ForeignKey(User, on_delete=models.CASCADE, related_name="contact")

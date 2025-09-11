@@ -21,6 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
+MEDIA_FULL_URL = "http://127.0.0.1:8000"
 
 load_dotenv()
 # Quick-start development settings - unsuitable for production
@@ -79,7 +80,7 @@ TEMPLATES = [
     },
 ]
 
-ASGI_APPLICATION = "backend.asgi.application"
+ASGI_APPLICATION = "backend.routing.application"
 
 CHANNEL_LAYERS = {
     "default": {
