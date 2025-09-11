@@ -44,11 +44,6 @@ jobs:
       run: |
         PGPASSWORD=$PASSWORD psql -h $HOST -U $USER2 -d $NAME -c '\dt'
 
-    - name: Run Migrations
-      run: |
-        python backend/manage.py makemigrations --noinput
-        python backend/manage.py migrate --noinput
-
     - name: Run Tests
       run: |
-        python backend/manage.py test chat user --noinput --parallel --keepdb
+        pytest backend/

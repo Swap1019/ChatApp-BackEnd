@@ -16,3 +16,9 @@ This is a real-time chat backend built with **Django** and **Django Channels**.
 - Real-time group chat via WebSockets
 - Message storage per user/group
 - Secure token-based access
+
+## ✏️ DataBase schema 
+![Database Schema](https://raw.githubusercontent.com/Swap1019/ChatApp-BackEnd/refs/heads/main/DataBase%20Schema.png)
+
+
+
