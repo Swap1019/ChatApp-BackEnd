@@ -62,9 +62,8 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def create_message(self, user, text):
-        conversation = Conversation.objects.get(id=self.room_name)
         return Message.objects.create(
-            conversation=conversation,
+            conversation=Conversation.objects.get(id=self.room_name),
             sender=user,
             content=text
         )
