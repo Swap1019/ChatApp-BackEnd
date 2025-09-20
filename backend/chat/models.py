@@ -9,7 +9,7 @@ class Conversation(models.Model):
     members = models.ManyToManyField(User, verbose_name="Members", related_name="chats")
     is_group = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Group creation date")
-    profile = models.ImageField(upload_to="chat",null=True,blank=True)
+    profile = models.ImageField(upload_to="chat",null=True,blank=True,default="chat/user-icon-in-flat-style-person-icon-client-symbol-vector.jpg")
 
     def __str__(self):
         return self.name

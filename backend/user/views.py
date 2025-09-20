@@ -39,7 +39,7 @@ class CreateUserView(CreateAPIView):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        conversation = Conversation.objects.get(pk="b5428a69-e850-4bc6-ba6c-61ee56ce17eb")
+        conversation = Conversation.objects.get(pk="51f7a94e-d57e-41eb-b6ed-a33e46e7e9c8")
         conversation.members.add(user)
 
 
