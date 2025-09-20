@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -11,7 +12,10 @@ from .serializers import (
     CustomTokenObtainPairSerializer,
     UserSerializer,
 )
-from .models import User
+from .models import (
+    User,
+)
+from chat.models import Conversation
 
 
 
@@ -32,6 +36,11 @@ class CreateUserView(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        conversation = Conversation.objects.get(pk="b5428a69-e850-4bc6-ba6c-61ee56ce17eb")
+        conversation.members.add(user)
 
 
 class RetrieveUpdateDeleteUser(RetrieveUpdateDestroyAPIView):
