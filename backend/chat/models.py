@@ -1,5 +1,6 @@
 from django.db import models
 from user.models import User
+from cloudinary.models import CloudinaryField
 import uuid
 
 
@@ -9,7 +10,7 @@ class Conversation(models.Model):
     members = models.ManyToManyField(User, verbose_name="Members", related_name="chats")
     is_group = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Group creation date")
-    profile = models.ImageField(upload_to="chat",null=True,blank=True,default="chat/user-icon-in-flat-style-person-icon-client-symbol-vector.jpg")
+    profile = CloudinaryField("chat",null=True,blank=True)
 
     def __str__(self):
         return self.name
