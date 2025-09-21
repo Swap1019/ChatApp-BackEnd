@@ -172,7 +172,14 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
-ALLOWED_HOSTS = ["*"]  # will be updated after frontend deployment
+ALLOWED_HOSTS = [
+    "https://chatapp-frontend-4rb9.onrender.com",
+    "127.0.0.1"
+]
 
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOWS_CREDENTIALS = True
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "https://chatapp-frontend-4rb9.onrender.com",
+    "127.0.0.1"
+]
