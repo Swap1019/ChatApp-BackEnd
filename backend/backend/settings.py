@@ -181,9 +181,10 @@ ALLOWED_HOSTS = [
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "chatapp-frontend-4rb9.onrender.com",
-    "127.0.0.1"
+    "https://chatapp-frontend-4rb9.onrender.com",
+    "http://127.0.0.1:5374"  # adjust port if your local frontend runs on Vite dev server
 ]
+
 CSRF_TRUSTED_ORIGINS = [
     "https://chatapp-frontend-4rb9.onrender.com"
 ]
