@@ -173,13 +173,17 @@ SIMPLE_JWT = {
 }
 
 ALLOWED_HOSTS = [
-    "https://chatapp-frontend-4rb9.onrender.com",
+    "chatapp-frontend-4rb9.onrender.com",
+    "chatapp-backend-0njt.onrender.com",
     "127.0.0.1"
 ]
 
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "https://chatapp-frontend-4rb9.onrender.com",
+    "chatapp-frontend-4rb9.onrender.com",
     "127.0.0.1"
+]
+CSRF_TRUSTED_ORIGINS = [
+    "https://chatapp-frontend-4rb9.onrender.com"
 ]
