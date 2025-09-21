@@ -2,7 +2,6 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Conversation, Message
-from backend.settings import MEDIA_FULL_URL
 
 
 class ChatRoomConsumer(AsyncWebsocketConsumer):
@@ -47,7 +46,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
                     "sender": {
                         "id": str(message.sender.id),
                         "nickname": message.sender.nickname,
-                        "profile": MEDIA_FULL_URL + getattr(message.sender.profile, 'url', '') if message.sender.profile and message.sender.profile else None,
+                        "profile": getattr(message.sender.profile, 'url', '') if message.sender.profile and message.sender.profile else None,
                     },
                     "created_at": message.created_at.isoformat(),
                     "is_read": message.is_read,
