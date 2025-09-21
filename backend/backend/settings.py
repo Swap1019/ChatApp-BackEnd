@@ -9,15 +9,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 #cloudinary config for serving images
+load_dotenv()
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+
 cloudinary.config(
     cloud_name = os.getenv("CLOUDINARY_NAME"),
     api_key = os.getenv("CLOUDINARY_API_KEY"),
     api_secret = os.getenv("CLOUDINARY_API_SECRET")
 )
 
-load_dotenv()
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
