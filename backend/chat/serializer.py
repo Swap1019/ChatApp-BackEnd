@@ -1,5 +1,5 @@
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
+from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers
 from user.serializers import UserSerializer
 from .models import (
     Conversation,
@@ -16,6 +16,8 @@ class MessageSerializer(ModelSerializer):
 
 
 class ConversationSerializer(ModelSerializer):
+    profile = serializers.ImageField(use_url=True, required=False)
+
     class Meta:
         model = Conversation
         fields = "__all__"
