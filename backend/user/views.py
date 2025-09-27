@@ -10,7 +10,7 @@ from rest_framework.permissions import (
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import (
     CustomTokenObtainPairSerializer,
-    UserSerializer,
+    UserSettingsSerializer,
 )
 from .models import (
     User,
@@ -34,7 +34,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class CreateUserView(CreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = UserSettingsSerializer
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
@@ -44,7 +44,7 @@ class CreateUserView(CreateAPIView):
 
 
 class RetrieveUpdateDeleteUser(RetrieveUpdateDestroyAPIView):
-    serializer_class = UserSerializer
+    serializer_class = UserSettingsSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 

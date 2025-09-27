@@ -1,6 +1,12 @@
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
-from user.serializers import UserSerializer
+from rest_framework import serializers
+from user.serializers import (
+    UserSerializer,
+    UserSettingsSerializer,
+    UserMessageSerializer,
+)
+
 from .models import (
     Conversation,
     Message,
@@ -8,7 +14,7 @@ from .models import (
 
 
 class MessageSerializer(ModelSerializer):
-    sender = UserSerializer(read_only=True)
+    sender = UserMessageSerializer(read_only=True)
 
     class Meta:
         model = Message
@@ -16,9 +22,11 @@ class MessageSerializer(ModelSerializer):
 
 
 class ConversationSerializer(ModelSerializer):
+    profile = serializers.ImageField(use_url=True, required=False)
+
     class Meta:
         model = Conversation
-        fields = "__all__"
+        exclude = ["created_at","members"]
         read_only_fields = [
             "id",
         ]

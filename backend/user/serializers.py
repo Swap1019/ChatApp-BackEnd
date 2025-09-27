@@ -15,7 +15,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
 
 
-class UserSerializer(ModelSerializer):
+class UserSettingsSerializer(ModelSerializer):
     profile = serializers.ImageField(use_url=True, required=False)
     background_image = serializers.ImageField(use_url=True, required=False)
 
@@ -60,3 +60,21 @@ class UserSerializer(ModelSerializer):
 
         instance.save()
         return instance
+    
+class UserSerializer(ModelSerializer):
+    profile = serializers.ImageField(use_url=True, required=False)
+
+    class Meta:
+        model = User
+        fields = ["id","username","nickname","bio","profile"]
+
+
+class UserMessageSerializer(ModelSerializer):
+    profile = serializers.ImageField(use_url=True, required=False)
+
+    class Meta:
+        model = User
+        fields = ["id","nickname","profile"]
+        
+
+
