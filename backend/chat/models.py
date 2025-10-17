@@ -1,6 +1,7 @@
 from django.db import models
 from user.models import User
 from cloudinary.models import CloudinaryField
+from cloudinary import CloudinaryImage
 import uuid
 
 
@@ -14,6 +15,15 @@ class Conversation(models.Model):
 
     def __str__(self):
         return self.name
+    
+    @property
+    def profile_url(self):
+        if not self.profile:
+            return None
+        return CloudinaryImage(self.profile.public_id).build_url(
+            fetch_format="webp"
+        )
+    
 
 
 class Message(models.Model):

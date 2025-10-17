@@ -46,7 +46,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
                     "sender": {
                         "id": str(message.sender.id),
                         "nickname": message.sender.nickname,
-                        "profile": getattr(message.sender.profile, 'url', '') if message.sender.profile and message.sender.profile else None,
+                        "profile_url": message.sender.profile_url,
                     },
                     "created_at": message.created_at.isoformat(),
                     "is_read": message.is_read,

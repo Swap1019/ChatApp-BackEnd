@@ -2,6 +2,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import User
+from cloudinary import CloudinaryImage
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -18,6 +19,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserSettingsSerializer(ModelSerializer):
     profile = serializers.ImageField(use_url=True, required=False)
     background_image = serializers.ImageField(use_url=True, required=False)
+    profile_url = serializers.ReadOnlyField()
+    background_image_url = serializers.ReadOnlyField()
 
     class Meta:
         model = User
@@ -30,6 +33,8 @@ class UserSettingsSerializer(ModelSerializer):
             "is_superuser",
             "groups",
             "user_permissions",
+            "profile_url",
+            "background_url"
         ]
         extra_kwargs = {
             "password": {"write_only": True, "required": False},
@@ -50,7 +55,7 @@ class UserSettingsSerializer(ModelSerializer):
         validated_data.pop("password", None)
         validated_data.pop("id", None)
 
-        delete_allowed_fields = ["profile", "nickname", "bio"]
+        delete_allowed_fields = ["profile", "nickname", "bio", "background_image"]
 
         for attr, value in validated_data.items():
             if attr in delete_allowed_fields or value is not None:
@@ -60,21 +65,17 @@ class UserSettingsSerializer(ModelSerializer):
 
         instance.save()
         return instance
-    
+
+
 class UserSerializer(ModelSerializer):
-    profile = serializers.ImageField(use_url=True, required=False)
 
     class Meta:
         model = User
-        fields = ["id","username","nickname","bio","profile"]
+        fields = ["id", "username", "nickname", "bio", "profile_url"]
 
 
 class UserMessageSerializer(ModelSerializer):
-    profile = serializers.ImageField(use_url=True, required=False)
 
     class Meta:
         model = User
-        fields = ["id","nickname","profile"]
-        
-
-
+        fields = ["id", "nickname", "profile_url"]
