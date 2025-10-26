@@ -14,6 +14,9 @@ cloudinary.config(
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
 )
 
+# --- Redis ---
+REDIS_URL = os.getenv("REDIS_URL")
+
 # --- Security ---
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = False
@@ -85,7 +88,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.getenv("REDIS_URL"), 6379],
+            "hosts": [f"redis://{REDIS_URL}:6379"],
         },
     },
 }
