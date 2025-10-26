@@ -8,15 +8,15 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-#cloudinary config for serving images
+# cloudinary config for serving images
 load_dotenv()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 cloudinary.config(
-    cloud_name = os.getenv("CLOUDINARY_NAME"),
-    api_key = os.getenv("CLOUDINARY_API_KEY"),
-    api_secret = os.getenv("CLOUDINARY_API_SECRET")
+    cloud_name=os.getenv("CLOUDINARY_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
 )
 
 
@@ -86,13 +86,12 @@ CHANNEL_LAYERS = {
     },
 }
 
-#storages
+# storages
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
-
 
 
 # Database
@@ -176,3 +175,8 @@ ALLOWED_HOSTS = ["*"]  # will be updated after frontend deployment
 
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOWS_CREDENTIALS = True
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600
+
+# Celery settings
+CELERY_BROKER_URL = "redis://localhost:6379"
+CELERY_IMPORTS = ["user.tasks"]
