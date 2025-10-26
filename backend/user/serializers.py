@@ -2,7 +2,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import User
-from cloudinary import CloudinaryImage
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -17,8 +16,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class UserSettingsSerializer(ModelSerializer):
-    profile = serializers.ImageField(use_url=True, required=False)
-    background_image = serializers.ImageField(use_url=True, required=False)
     profile_url = serializers.ReadOnlyField()
     background_image_url = serializers.ReadOnlyField()
 

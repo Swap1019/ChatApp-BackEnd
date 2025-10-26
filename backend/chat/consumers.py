@@ -29,6 +29,10 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         text = data.get("text")
 
+        if data.get("type") == "ping":
+            await self.send(text_data=json.dumps({"type": "pong"}))
+            return
+
         if not text:
             return
 
