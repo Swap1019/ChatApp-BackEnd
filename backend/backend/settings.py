@@ -85,15 +85,12 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            # Render provides REDIS_URL as environment variable
-            "hosts": [os.getenv("REDIS_URL")],
+            "hosts": [os.getenv("REDIS_URL"), 6379],
         },
     },
 }
 
 # --- Celery ---
-CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_IMPORTS = ["user.tasks"]
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
