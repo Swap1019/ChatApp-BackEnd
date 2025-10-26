@@ -95,6 +95,8 @@ CHANNEL_LAYERS = {
 
 # --- Celery ---
 CELERY_IMPORTS = ["user.tasks"]
+CELERY_BROKER_URL = f"redis://{REDIS_URL}/0"
+CELERY_RESULT_BACKEND = f"redis://{REDIS_URL}/0"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
 
