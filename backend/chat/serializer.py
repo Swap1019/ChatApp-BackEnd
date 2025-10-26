@@ -23,10 +23,12 @@ class MessageSerializer(ModelSerializer):
 
 class ConversationSerializer(ModelSerializer):
     profile = serializers.ImageField(use_url=True, required=False)
+    profile_url = serializers.ReadOnlyField()
 
     class Meta:
         model = Conversation
         exclude = ["created_at","members"]
         read_only_fields = [
             "id",
+            "profile_url",
         ]

@@ -29,6 +29,10 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         text = data.get("text")
 
+        if data.get("type") == "ping":
+            await self.send(text_data=json.dumps({"type": "pong"}))
+            return
+
         if not text:
             return
 
@@ -46,7 +50,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
                     "sender": {
                         "id": str(message.sender.id),
                         "nickname": message.sender.nickname,
-                        "profile": getattr(message.sender.profile, 'url', '') if message.sender.profile and message.sender.profile else None,
+                        "profile_url": message.sender.profile_url,
                     },
                     "created_at": message.created_at.isoformat(),
                     "is_read": message.is_read,
