@@ -118,8 +118,8 @@ DATABASES = {
 
 ELASTICSEARCH_DSL = {
     "default": {
-        "hosts": "https://elasticsearch-swap1019.kubarcloud.net:443",
-        "http_auth": ("elastic", "twG=MA*ww2xe7iPouicu"),
+        "hosts": os.getenv("ELASTICSEARCH_HOST"),
+        "http_auth": (os.getenv("ELASTICSEARCH_USER"), os.getenv("ELASTICSEARCH_PASSWORD")),
         "verify_certs": True,
     },
 }
