@@ -1,8 +1,9 @@
-from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
+from django.db import IntegrityError, transaction
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated,
@@ -16,9 +17,8 @@ from .models import (
     User,
 )
 from chat.models import Conversation
-from user.tasks import upload_user_images 
+from user.tasks import upload_user_images
 import tempfile
-
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -39,10 +39,34 @@ class CreateUserView(CreateAPIView):
     serializer_class = UserSettingsSerializer
     permission_classes = [AllowAny]
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        try:
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+        except ValidationError as e:
+            return Response(
+                {"detail": "Invalid input", "errors": e.detail},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except IntegrityError:
+            return Response(
+                {
+                    "detail": "User already exists.",
+                    "errors": {
+                        "username": ["A user with that username already exists."],
+                        "email": ["A user with that email already exists."],
+                    },
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     def perform_create(self, serializer):
-        user = serializer.save()
-        conversation = Conversation.objects.get(pk="51f7a94e-d57e-41eb-b6ed-a33e46e7e9c8")
-        conversation.members.add(user)
+        with transaction.atomic():
+            serializer.save()
 
 
 class RetrieveUpdateDeleteUser(RetrieveUpdateDestroyAPIView):
@@ -52,7 +76,7 @@ class RetrieveUpdateDeleteUser(RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         return self.request.user
-    
+
     def patch(self, request, *args, **kwargs):
         user = self.request.user
         data = request.data.copy()
@@ -74,7 +98,7 @@ class RetrieveUpdateDeleteUser(RetrieveUpdateDestroyAPIView):
                     tmp.write(chunk)
                 background_path = tmp.name
 
-        #Update text fields before image field
+        # Update text fields before image field
         serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -85,5 +109,8 @@ class RetrieveUpdateDeleteUser(RetrieveUpdateDestroyAPIView):
                 {"detail": "Profile updated. Images are uploading in background."},
                 status=202,
             )
-        
-        return Response({"detail": "Your profile has been updated, please reload for the changes"}, status=200)
+
+        return Response(
+            {"detail": "Your profile has been updated, please reload for the changes"},
+            status=200,
+        )

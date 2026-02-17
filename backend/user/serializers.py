@@ -18,6 +18,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserSettingsSerializer(ModelSerializer):
     profile_url = serializers.ReadOnlyField()
     background_image_url = serializers.ReadOnlyField()
+    
 
     class Meta:
         model = User
@@ -36,6 +37,11 @@ class UserSettingsSerializer(ModelSerializer):
         extra_kwargs = {
             "password": {"write_only": True, "required": False},
             "id": {"read_only": True},
+            "nickname": {
+                "required": True,
+                "allow_blank": False,
+                "allow_null": False,
+            },
         }
 
     def create(self, validated_data):
@@ -65,10 +71,18 @@ class UserSettingsSerializer(ModelSerializer):
 
 
 class UserSerializer(ModelSerializer):
-
+    
     class Meta:
         model = User
         fields = ["id", "username", "nickname", "bio", "profile_url"]
+        extra_kwargs = {
+            "password": {"write_only": True, "required": False},
+            "nickname": {
+                "required": True,
+                "allow_blank": False,
+                "allow_null": False,
+            },
+        }
 
 
 class UserMessageSerializer(ModelSerializer):
@@ -76,3 +90,11 @@ class UserMessageSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "nickname", "profile_url"]
+        extra_kwargs = {
+            "password": {"write_only": True, "required": False},
+            "nickname": {
+                "required": True,
+                "allow_blank": False,
+                "allow_null": False,
+            },
+        }

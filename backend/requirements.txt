@@ -1,4 +1,5 @@
 amqp
+anyio
 asgiref
 async-timeout
 attrs
@@ -10,6 +11,7 @@ certifi
 cffi
 channels
 channels-redis
+charset-normalizer
 click
 click-didyoumean
 click-plugins
@@ -18,10 +20,18 @@ cloudinary
 constantly
 cryptography
 daphne
+dateutils
 django
 django-cors-headers
+django-elasticsearch-dsl==8.0
+django-elasticsearch-dsl-drf==0.22.5
+django-nine
 djangorestframework
 djangorestframework-simplejwt
+elastic-transport==8.17.1
+elasticsearch==8.18.1
+elasticsearch-dsl==8.18.0
+events
 gunicorn
 h11
 hyperlink
@@ -47,10 +57,13 @@ pytest
 pytest-django
 python-dateutil
 python-dotenv
+pytz
 redis
+requests
 service-identity
 setuptools
 six
+sniffio
 sqlparse
 tblib
 twisted

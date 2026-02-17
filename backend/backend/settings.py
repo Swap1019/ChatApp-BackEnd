@@ -7,6 +7,11 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 
+
+def csv_env(name, default=""):
+    value = os.getenv(name, default)
+    return [item.strip() for item in value.split(",") if item.strip()]
+
 # --- Cloudinary Configuration ---
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_NAME"),
@@ -15,23 +20,15 @@ cloudinary.config(
 )
 
 # --- Redis ---
-REDIS_URL = os.getenv("REDIS_URL")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # --- Security ---
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = False
 
-ALLOWED_HOSTS = [
-    "chatapp-backend-0njt.onrender.com",
-    "chatapp-frontend-4rb9.onrender.com",
-    "127.0.0.1",
-    "localhost",
-]
+ALLOWED_HOSTS = csv_env("ALLOWED_HOSTS", "127.0.0.1,localhost")
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://chatapp-frontend-4rb9.onrender.com",
-    "https://chatapp-backend-0njt.onrender.com",
-]
+CSRF_TRUSTED_ORIGINS = csv_env("CSRF_TRUSTED_ORIGINS", "http://localhost:5173")
 
 # --- Apps ---
 INSTALLED_APPS = [
@@ -49,6 +46,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "cloudinary",
+    "django_elasticsearch_dsl",
 ]
 
 # --- Middleware ---
@@ -58,7 +56,6 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -88,15 +85,15 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [f"redis://{REDIS_URL}:6379"],
+            "hosts": [REDIS_URL],
         },
     },
 }
 
 # --- Celery ---
 CELERY_IMPORTS = ["user.tasks"]
-CELERY_BROKER_URL = f"redis://{REDIS_URL}/0"
-CELERY_RESULT_BACKEND = f"redis://{REDIS_URL}/0"
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
 
@@ -122,11 +119,65 @@ STORAGES = {
     },
 }
 
-# --- Authentication / REST Framework ---
+# ELASTICSEARCH
+
+ELASTICSEARCH_DSL = {
+    "default": {
+        "hosts": os.getenv("ELASTICSEARCH_HOST"),
+        "http_auth": (os.getenv("ELASTICSEARCH_USER"), os.getenv("ELASTICSEARCH_PASSWORD")),
+        "verify_certs": True,
+    },
+}
+ELASTICSEARCH_DSL_SIGNAL_PROCESSOR = (
+    "django_elasticsearch_dsl.signals.RealTimeSignalProcessor"
+)
+
+
+# Password validation
+# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
+]
+
+
+# Internationalization
+# https://docs.djangoproject.com/en/5.2/topics/i18n/
+
+LANGUAGE_CODE = "en-us"
+
+TIME_ZONE = "UTC"
+
+USE_I18N = True
+
+USE_TZ = True
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.2/howto/static-files/
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = "static/"
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
 AUTH_USER_MODEL = "user.User"
 
 REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
@@ -137,37 +188,8 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
-# --- Password Validation ---
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
-    },
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-]
-
-# --- CORS / CSRF ---
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "https://chatapp-frontend-4rb9.onrender.com",
-]
-CORS_ALLOW_HEADERS = [
-    "authorization",
-    "content-type",
-    "accept",
-    "origin",
-    "x-csrftoken",
-]
+CORS_ALLOWED_ORIGINS = csv_env("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 
-# --- Limits ---
-DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600
 
-# --- Internationalization ---
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
-USE_I18N = True
-USE_TZ = True
-
-# --- Default Primary Key ---
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

@@ -1,9 +1,5 @@
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
 from rest_framework import serializers
 from user.serializers import (
-    UserSerializer,
-    UserSettingsSerializer,
     UserMessageSerializer,
 )
 
@@ -13,7 +9,7 @@ from .models import (
 )
 
 
-class MessageSerializer(ModelSerializer):
+class MessageSerializer(serializers.ModelSerializer):
     sender = UserMessageSerializer(read_only=True)
 
     class Meta:
@@ -21,7 +17,7 @@ class MessageSerializer(ModelSerializer):
         fields = "__all__"
 
 
-class ConversationSerializer(ModelSerializer):
+class ConversationSerializer(serializers.ModelSerializer):
     profile = serializers.ImageField(use_url=True, required=False)
     profile_url = serializers.ReadOnlyField()
 
@@ -32,3 +28,9 @@ class ConversationSerializer(ModelSerializer):
             "id",
             "profile_url",
         ]
+
+class MemberSearchSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    username = serializers.CharField()
+    nickname = serializers.CharField(allow_null=True)
+    profile_url = serializers.ReadOnlyField(allow_null=True)
