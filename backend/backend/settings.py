@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "cloudinary",
     "django_elasticsearch_dsl",
+    "phonenumber_field",
 ]
 
 # --- Middleware ---

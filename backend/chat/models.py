@@ -45,6 +45,13 @@ class Message(models.Model):
         User, verbose_name="Sender", on_delete=models.SET_NULL, null=True
     )
     content = models.TextField()
+    reply_to = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="replies",
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Sent at")
     is_read = models.BooleanField(default=False, verbose_name="Seen status")
 
@@ -59,3 +66,14 @@ class Contact(models.Model):
 
     class Meta:
         unique_together = ("owner", "contact")
+
+
+class MessagesMedia(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="media_files",
+        verbose_name="Message",
+    )
+    file = models.FileField(upload_to="messages_media/")

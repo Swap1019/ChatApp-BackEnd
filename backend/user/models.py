@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from cloudinary.models import CloudinaryField
 from cloudinary import CloudinaryImage
+from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 
 class User(AbstractUser):
@@ -10,7 +11,14 @@ class User(AbstractUser):
     profile = CloudinaryField("profile",blank=True, null=True)
     background_image = CloudinaryField("background_image",blank=True,null=True)
     bio = models.CharField(max_length=80, verbose_name="Bio", blank=True, null=True)
-    email = models.EmailField(unique=True,verbose_name="Email")
+    email = models.EmailField(verbose_name="Email", blank=True, null=True)
+    phone_number = PhoneNumberField(
+        max_length=20,
+        verbose_name="Phone Number",
+        blank=True,
+        null=True,
+        unique=True,
+    )
 
     def __str__(self):
         return self.username
