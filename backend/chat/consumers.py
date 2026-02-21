@@ -33,6 +33,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
 
         data = json.loads(text_data)
         text = data.get("text")
+        reply_to = data.get("reply_to")
 
         if data.get("type") == "ping":
             await self.send(text_data=json.dumps({"type": "pong"}))
@@ -41,7 +42,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         if not text:
             return
 
-        result = await self.create_message(user, text)
+        result = await self.create_message(user, text, reply_to)
         if not result["created"]:
             return
 
@@ -57,8 +58,13 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({"message": event["message"]}))
 
     @database_sync_to_async
-    def create_message(self, user, text):
+    def create_message(self, user, text, reply_to_id=None):
         conversation = Conversation.objects.get(id=self.room_name)
+        reply_to_message = None
+        if reply_to_id:
+            reply_to_message = (
+                Message.objects.filter(id=reply_to_id, conversation=conversation).first()
+            )
 
         # Guard against rapid duplicate submits from mobile browsers.
         recent = (
@@ -79,6 +85,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
                 conversation=conversation,
                 sender=user,
                 content=text,
+                reply_to=reply_to_message,
             )
             created = True
 
@@ -94,6 +101,9 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
                 },
                 "created_at": message.created_at.isoformat(),
                 "is_read": message.is_read,
+                "reply_to": (
+                    str(message.reply_to_id) if message.reply_to_id is not None else None
+                ),
             },
         }
 

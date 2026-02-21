@@ -56,7 +56,7 @@ class CreateUserView(CreateAPIView):
                     "detail": "User already exists.",
                     "errors": {
                         "username": ["A user with that username already exists."],
-                        "email": ["A user with that email already exists."],
+                        "phone_number": ["A user with that phone number already exists."],
                     },
                 },
                 status=status.HTTP_400_BAD_REQUEST,

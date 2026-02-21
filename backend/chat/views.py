@@ -53,13 +53,15 @@ class ConversationDataRetrieveView(APIView):
     def get(self, request, uuid=None, *args, **kwargs):
         msg_data = MessageSerializer(
             Message.objects.filter(conversation_id=uuid)
-            .select_related("sender")
+            .select_related("sender", "reply_to")
+            .prefetch_related("media_files")
             .only(
                 "sender__id",
                 "sender__nickname",
                 "sender__profile",
                 "conversation",
                 "content",
+                "reply_to",
                 "created_at",
                 "is_read",
             ),

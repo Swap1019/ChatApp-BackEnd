@@ -5,6 +5,7 @@ class UserAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "username",
+        "phone_number",
         "email",
         "is_staff",
         "is_active",

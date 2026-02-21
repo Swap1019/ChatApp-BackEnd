@@ -6,11 +6,19 @@ from user.serializers import (
 from .models import (
     Conversation,
     Message,
+    MessagesMedia,
 )
+
+
+class MessageMediaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MessagesMedia
+        fields = "__all__"
 
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserMessageSerializer(read_only=True)
+    media_files = MessageMediaSerializer(many=True, read_only=True)
 
     class Meta:
         model = Message

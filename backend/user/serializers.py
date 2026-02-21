@@ -10,6 +10,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data["user"] = {
             "id": self.user.id,
             "username": self.user.username,
+            "phone_number": self.user.phone_number,
             "email": self.user.email,
         }
         return data
@@ -37,6 +38,8 @@ class UserSettingsSerializer(ModelSerializer):
         extra_kwargs = {
             "password": {"write_only": True, "required": False},
             "id": {"read_only": True},
+            "email": {"required": False, "allow_blank": True, "allow_null": True},
+            "phone_number": {"required": False, "allow_blank": True, "allow_null": True},
             "nickname": {
                 "required": True,
                 "allow_blank": False,
