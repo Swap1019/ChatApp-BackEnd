@@ -28,7 +28,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = csv_env("ALLOWED_HOSTS", "127.0.0.1,localhost")
 
-CSRF_TRUSTED_ORIGINS = csv_env("CSRF_TRUSTED_ORIGINS", "http://localhost:5173")
+CSRF_TRUSTED_ORIGINS = csv_env("CSRF_TRUSTED_ORIGINS", "http://localhost")
 
 # --- Apps ---
 INSTALLED_APPS = [
@@ -113,8 +113,13 @@ DATABASES = {
 # --- Static & Media ---
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
@@ -193,4 +198,3 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = csv_env("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600
-

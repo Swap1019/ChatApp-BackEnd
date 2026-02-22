@@ -69,6 +69,12 @@ class Contact(models.Model):
 
 
 class MessagesMedia(models.Model):
+    KIND_CHOICES = (
+        ("image", "image"),
+        ("video", "video"),
+        ("file", "file"),
+    )
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     message = models.ForeignKey(
         Message,
@@ -77,3 +83,4 @@ class MessagesMedia(models.Model):
         verbose_name="Message",
     )
     file = models.FileField(upload_to="messages_media/")
+    kind = models.CharField(max_length=10, choices=KIND_CHOICES, null=True, blank=True)

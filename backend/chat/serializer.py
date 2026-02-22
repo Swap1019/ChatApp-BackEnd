@@ -11,9 +11,31 @@ from .models import (
 
 
 class MessageMediaSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
+
+    def get_url(self, obj):
+        file_name = str(obj.file)
+        if file_name.startswith("http://") or file_name.startswith("https://"):
+            return file_name
+        try:
+            return obj.file.url
+        except Exception:
+            return file_name
+
+    def get_kind(self, obj):
+        if obj.kind:
+            return obj.kind
+        file_name = (str(obj.file) or "").lower()
+        if any(file_name.endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"]):
+            return "image"
+        if any(file_name.endswith(ext) for ext in [".mp4", ".webm", ".ogg", ".mov", ".mkv", ".m4v"]):
+            return "video"
+        return None
+
     class Meta:
         model = MessagesMedia
-        fields = "__all__"
+        fields = ("id", "message", "file", "url", "kind")
 
 
 class MessageSerializer(serializers.ModelSerializer):

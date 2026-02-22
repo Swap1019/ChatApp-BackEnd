@@ -6,7 +6,7 @@ from django.utils import timezone
 from channels.generic.websocket import AsyncJsonWebsocketConsumer, AsyncWebsocketConsumer
 
 from user.models import User
-from .models import Conversation, Message
+from .models import Conversation, Message, MessagesMedia
 from .payloads import build_conversation_payload
 
 
@@ -34,15 +34,16 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         text = data.get("text")
         reply_to = data.get("reply_to")
+        attachments = data.get("attachments") or []
 
         if data.get("type") == "ping":
             await self.send(text_data=json.dumps({"type": "pong"}))
             return
 
-        if not text:
+        if not text and not attachments:
             return
 
-        result = await self.create_message(user, text, reply_to)
+        result = await self.create_message(user, text or "", reply_to, attachments)
         if not result["created"]:
             return
 
@@ -58,25 +59,29 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({"message": event["message"]}))
 
     @database_sync_to_async
-    def create_message(self, user, text, reply_to_id=None):
+    def create_message(self, user, text, reply_to_id=None, attachments=None):
         conversation = Conversation.objects.get(id=self.room_name)
         reply_to_message = None
+        attachments = attachments or []
         if reply_to_id:
             reply_to_message = (
                 Message.objects.filter(id=reply_to_id, conversation=conversation).first()
             )
 
         # Guard against rapid duplicate submits from mobile browsers.
-        recent = (
-            Message.objects.filter(
-                conversation=conversation,
-                sender=user,
-                content=text,
-                created_at__gte=timezone.now() - timedelta(milliseconds=700),
+        recent = None
+        if text and not attachments:
+            recent = (
+                Message.objects.filter(
+                    conversation=conversation,
+                    sender=user,
+                    content=text,
+                    created_at__gte=timezone.now() - timedelta(milliseconds=700),
+                )
+                .order_by("-created_at")
+                .first()
             )
-            .order_by("-created_at")
-            .first()
-        )
+        created_media_files = []
         if recent:
             message = recent
             created = False
@@ -87,7 +92,29 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
                 content=text,
                 reply_to=reply_to_message,
             )
+            for attachment in attachments:
+                url = attachment.get("url")
+                kind = attachment.get("kind")
+                if not url:
+                    continue
+                media = MessagesMedia.objects.create(message=message, file=url, kind=kind)
+                created_media_files.append(
+                    {
+                        "id": str(media.id),
+                        "file": url,
+                        "kind": kind,
+                    }
+                )
             created = True
+
+        media_files = (
+            created_media_files
+            if created_media_files
+            else [
+                {"id": str(media.id), "file": str(media.file), "kind": media.kind}
+                for media in message.media_files.all()
+            ]
+        )
 
         return {
             "created": created,
@@ -101,6 +128,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
                 },
                 "created_at": message.created_at.isoformat(),
                 "is_read": message.is_read,
+                "media_files": media_files,
                 "reply_to": (
                     str(message.reply_to_id) if message.reply_to_id is not None else None
                 ),
