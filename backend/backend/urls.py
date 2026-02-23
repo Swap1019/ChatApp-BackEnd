@@ -9,5 +9,5 @@ urlpatterns = [
     path("user/", include("user.urls")),
     path("chat/", include("chat.urls")),
 ]
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve media files in this deployment as well.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

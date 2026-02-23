@@ -72,6 +72,13 @@ class UserSettingsSerializer(ModelSerializer):
         instance.save()
         return instance
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Do not return raw image payload fields (can be huge for legacy inline data).
+        data.pop("profile", None)
+        data.pop("background_image", None)
+        return data
+
 
 class UserSerializer(ModelSerializer):
     

@@ -1,5 +1,4 @@
 import os
-import cloudinary
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
@@ -12,19 +11,16 @@ def csv_env(name, default=""):
     value = os.getenv(name, default)
     return [item.strip() for item in value.split(",") if item.strip()]
 
-# --- Cloudinary Configuration ---
-cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-)
+
+def str_env(name, default=""):
+    return (os.getenv(name, default) or "").strip().rstrip("/")
 
 # --- Redis ---
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # --- Security ---
 SECRET_KEY = os.getenv("SECRET_KEY")
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = csv_env("ALLOWED_HOSTS", "127.0.0.1,localhost")
 
@@ -45,7 +41,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
-    "cloudinary",
     "django_elasticsearch_dsl",
     "phonenumber_field",
 ]
@@ -55,6 +50,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "backend.http_middleware.MediaCorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -91,13 +87,6 @@ CHANNEL_LAYERS = {
     },
 }
 
-# --- Celery ---
-CELERY_IMPORTS = ["user.tasks"]
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
-
 # --- Database ---
 DATABASES = {
     "default": {
@@ -113,8 +102,9 @@ DATABASES = {
 # --- Static & Media ---
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/var/www/chatapp/media/"
+MEDIA_ROOT = BASE_DIR / "/var/www/chatapp/media/"
+MEDIA_PUBLIC_BASE_URL = str_env("MEDIA_PUBLIC_BASE_URL", "")
 
 STORAGES = {
     "default": {
@@ -196,5 +186,7 @@ SIMPLE_JWT = {
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = csv_env("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
+WHITENOISE_ALLOW_ALL_ORIGINS = True
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600
+FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600

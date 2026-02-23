@@ -7,6 +7,7 @@ from .models import (
     Conversation,
     Message,
     MessagesMedia,
+    Contact,
 )
 
 
@@ -35,7 +36,7 @@ class MessageMediaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MessagesMedia
-        fields = ("id", "message", "file", "url", "kind")
+        fields = ("id", "message", "name", "file", "url", "kind")
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -48,7 +49,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class ConversationSerializer(serializers.ModelSerializer):
-    profile = serializers.ImageField(use_url=True, required=False)
+    profile = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     profile_url = serializers.ReadOnlyField()
 
     class Meta:
@@ -64,3 +65,34 @@ class MemberSearchSerializer(serializers.Serializer):
     username = serializers.CharField()
     nickname = serializers.CharField(allow_null=True)
     profile_url = serializers.ReadOnlyField(allow_null=True)
+
+
+class ContactSerializer(serializers.ModelSerializer):
+    contact = UserMessageSerializer(read_only=True)
+
+    class Meta:
+        model = Contact
+        fields = ("id", "contact", "created_at")
+
+
+class AddContactSerializer(serializers.Serializer):
+    user_id = serializers.UUIDField()
+
+
+class GroupConversationCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=50
+    )
+    member_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=False,
+        allow_empty=True,
+    )
+
+
+class GroupMembersAddSerializer(serializers.Serializer):
+    member_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=True,
+        allow_empty=False,
+    )

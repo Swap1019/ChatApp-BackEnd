@@ -1,7 +1,5 @@
 from django.db import models
 from user.models import User
-from cloudinary.models import CloudinaryField
-from cloudinary import CloudinaryImage
 import uuid
 
 
@@ -11,11 +9,23 @@ class Conversation(models.Model):
         max_length=50, verbose_name="Conversation name", default="Private"
     )
     members = models.ManyToManyField(User, verbose_name="Members", related_name="chats")
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_conversations",
+    )
+    admins = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name="admin_conversations",
+    )
     is_group = models.BooleanField(default=False)
     created_at = models.DateTimeField(
         auto_now_add=True, verbose_name="Group creation date"
     )
-    profile = CloudinaryField("chat", null=True, blank=True)
+    profile = models.TextField(null=True, blank=True, verbose_name="chat")
 
     def __str__(self):
         return self.name
@@ -24,7 +34,7 @@ class Conversation(models.Model):
     def profile_url(self):
         if not self.profile:
             return None
-        return CloudinaryImage(self.profile.public_id).build_url(fetch_format="webp")
+        return str(self.profile)
 
     def get_other_member(self, user):
         # Returns the other user in a private conversation.
@@ -82,5 +92,6 @@ class MessagesMedia(models.Model):
         related_name="media_files",
         verbose_name="Message",
     )
+    name = models.CharField(max_length=255, blank=True, null=True)
     file = models.FileField(upload_to="messages_media/")
     kind = models.CharField(max_length=10, choices=KIND_CHOICES, null=True, blank=True)

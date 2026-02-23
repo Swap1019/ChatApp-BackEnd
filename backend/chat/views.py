@@ -1,11 +1,10 @@
-from rest_framework.views import (
-    APIView,
-)
+from rest_framework.views import APIView
 from rest_framework.generics import (
     RetrieveAPIView,
 )
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.permissions import (
     IsAuthenticated,
 )
@@ -18,11 +17,14 @@ from .serializer import (
     ConversationSerializer,
     MessageSerializer,
     MemberSearchSerializer,
+    ContactSerializer,
+    AddContactSerializer,
 )
 
 from .models import (
     Message,
     Conversation,
+    Contact,
 )
 from user.models import User
 from .documents import (
@@ -121,3 +123,55 @@ class SearchUserDataRetrieveView(APIView):
 
         serializer = MemberSearchSerializer(results, many=True)
         return Response(serializer.data)
+
+
+class ContactsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        contacts = (
+            Contact.objects.filter(owner=request.user)
+            .select_related("contact")
+            .order_by("-created_at")
+        )
+        serializer = ContactSerializer(contacts, many=True, context={"request": request})
+        return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        serializer = AddContactSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user_id = serializer.validated_data["user_id"]
+
+        if str(user_id) == str(request.user.id):
+            return Response(
+                {"detail": "You cannot add yourself to contacts."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        contact_user = get_object_or_404(User, id=user_id)
+        contact, created = Contact.objects.get_or_create(
+            owner=request.user, contact=contact_user
+        )
+        response_serializer = ContactSerializer(contact, context={"request": request})
+        return Response(
+            {
+                "detail": "Contact added." if created else "Contact already exists.",
+                "contact": response_serializer.data,
+                "created": created,
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+class ContactDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, user_id=None, *args, **kwargs):
+        contact = Contact.objects.filter(owner=request.user, contact_id=user_id).first()
+        if not contact:
+            return Response(
+                {"detail": "Contact not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        contact.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -4,6 +4,8 @@ from .views import (
     ConversationDataRetrieveView,
     ConversationMembersDataRetrieveView,
     SearchUserDataRetrieveView,
+    ContactsView,
+    ContactDetailView,
 )
 
 urlpatterns = [
@@ -15,4 +17,6 @@ urlpatterns = [
         name="conversation-members",
     ),
     path("search/users/", SearchUserDataRetrieveView.as_view(), name="search-users"),
+    path("contacts/", ContactsView.as_view(), name="contacts"),
+    path("contacts/<uuid:user_id>/", ContactDetailView.as_view(), name="contact-detail"),
 ]

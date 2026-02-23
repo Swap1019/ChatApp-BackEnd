@@ -6,7 +6,6 @@ attrs
 autobahn
 automat
 billiard
-celery
 certifi
 cffi
 channels
