@@ -25,6 +25,7 @@ django-cors-headers
 django-elasticsearch-dsl==8.0
 django-elasticsearch-dsl-drf==0.22.5
 django-nine
+django-phonenumber-field
 djangorestframework
 djangorestframework-simplejwt
 elastic-transport==8.17.1
@@ -41,6 +42,7 @@ kombu
 msgpack
 msgpack-python
 packaging
+phonenumbers
 pillow
 pip
 pluggy

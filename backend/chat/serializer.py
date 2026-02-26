@@ -64,6 +64,9 @@ class MemberSearchSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     username = serializers.CharField()
     nickname = serializers.CharField(allow_null=True)
+    phone_number = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
     profile_url = serializers.ReadOnlyField(allow_null=True)
 
 

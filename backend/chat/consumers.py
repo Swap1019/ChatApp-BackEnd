@@ -2,15 +2,20 @@ import json
 import base64
 import os
 import uuid
+import asyncio
+import logging
 from io import BytesIO
 from datetime import timedelta
 from collections import Counter
 
+from redis import Redis
+from redis.exceptions import RedisError
 from channels.db import database_sync_to_async
 from django.utils import timezone
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db.models import Count
+from django.db import transaction
 from django.conf import settings
 from channels.generic.websocket import (
     AsyncJsonWebsocketConsumer,
@@ -21,6 +26,11 @@ from PIL import Image, UnidentifiedImageError
 from user.models import User
 from .models import Conversation, Message, MessagesMedia
 from .payloads import build_conversation_payload
+
+logger = logging.getLogger(__name__)
+_PERSIST_TASKS = set()
+_redis_client = Redis.from_url(settings.REDIS_URL, decode_responses=True)
+MESSAGE_PAGE_SIZE = 50
 
 
 class ChatRoomConsumer(AsyncWebsocketConsumer):
@@ -36,8 +46,9 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
-    async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+    async def disconnect(self, code):
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive(self, text_data):
         user = self.scope.get("user")
@@ -48,6 +59,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         text = data.get("text")
         reply_to = data.get("reply_to")
         attachments = data.get("attachments") or []
+        client_message_id = data.get("client_message_id")
 
         if data.get("type") == "ping":
             await self.send(text_data=json.dumps({"type": "pong"}))
@@ -56,32 +68,133 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         if not text and not attachments:
             return
 
-        result = await self.create_message(user, text or "", reply_to, attachments)
-        if not result["created"]:
-            return
+        optimistic_media_files = []
+        for idx, attachment in enumerate(attachments):
+            url = attachment.get("url")
+            if not url:
+                continue
+            optimistic_media_files.append(
+                {
+                    "id": f"optimistic-{client_message_id or 'msg'}-{idx}",
+                    "file": url,
+                    "kind": attachment.get("kind"),
+                    "name": attachment.get("name"),
+                }
+            )
+
+        optimistic_message = {
+            "id": client_message_id or f"optimistic-{uuid.uuid4().hex}",
+            "content": text or "",
+            "sender": {
+                "id": str(user.id),
+                "nickname": user.nickname,
+                "profile_url": user.profile_url,
+            },
+            "created_at": timezone.now().isoformat(),
+            "is_read": False,
+            "media_files": optimistic_media_files,
+            "reply_to": reply_to if reply_to is not None else None,
+            "client_message_id": str(client_message_id) if client_message_id else None,
+            "optimistic": True,
+        }
+
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "message": optimistic_message,
+                }
+            )
+        )
 
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 "type": "chat_message",
-                "message": result["message"],
+                "message": optimistic_message,
+                "exclude_channel": self.channel_name,
             },
         )
-        await self.notify_conversation_updates(
-            result["conversation_id"],
-            result["member_ids"],
+
+        task = asyncio.create_task(
+            self._persist_message_with_retry(
+                user,
+                text or "",
+                reply_to,
+                attachments,
+                client_message_id,
+            )
         )
+        _PERSIST_TASKS.add(task)
+        task.add_done_callback(_PERSIST_TASKS.discard)
 
     async def chat_message(self, event):
+        exclude_channel = event.get("exclude_channel")
+        if exclude_channel and exclude_channel == self.channel_name:
+            return
         await self.send(text_data=json.dumps({"message": event["message"]}))
 
+    async def _persist_message_with_retry(
+        self,
+        user,
+        text,
+        reply_to,
+        attachments,
+        client_message_id,
+    ):
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                result = await self.create_message(
+                    user,
+                    text,
+                    reply_to,
+                    attachments,
+                    client_message_id,
+                )
+                if not result.get("created"):
+                    return
+
+                self._update_message_cache(
+                    result["conversation_id"],
+                    result["message"],
+                )
+                await self.notify_conversation_updates(
+                    result["conversation_id"],
+                    result["member_ids"],
+                    result.get("last_message_preview"),
+                )
+                return
+            except Exception:
+                if attempt < max_attempts - 1:
+                    await asyncio.sleep(2 ** attempt)
+                    continue
+                logger.exception(
+                    "Failed to persist message after retries",
+                    extra={
+                        "room_name": getattr(self, "room_name", None),
+                        "sender_id": str(getattr(user, "id", "")),
+                        "client_message_id": client_message_id,
+                    },
+                )
+
     @database_sync_to_async
-    def create_message(self, user, text, reply_to_id=None, attachments=None):
-        conversation = Conversation.objects.get(id=self.room_name)
-        member_ids = [
-            str(member_id)
-            for member_id in conversation.members.values_list("id", flat=True)
-        ]
+    def create_message(
+        self,
+        user,
+        text,
+        reply_to_id=None,
+        attachments=None,
+        client_message_id=None,
+    ):
+        conversation = (
+            Conversation.objects.filter(id=self.room_name, members=user)
+            .prefetch_related("members")
+            .first()
+        )
+        if not conversation:
+            return {"created": False}
+
+        member_ids = [str(member.id) for member in conversation.members.all()]
         reply_to_message = None
         attachments = attachments or []
         if reply_to_id:
@@ -107,29 +220,43 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
             message = recent
             created = False
         else:
-            message = Message.objects.create(
-                conversation=conversation,
-                sender=user,
-                content=text,
-                reply_to=reply_to_message,
-            )
-            for attachment in attachments:
-                url = attachment.get("url")
-                kind = attachment.get("kind")
-                name = attachment.get("name")
-                if not url:
-                    continue
-                media = MessagesMedia.objects.create(
-                    message=message, file=url, kind=kind, name=name,
+            with transaction.atomic():
+                message = Message.objects.create(
+                    conversation=conversation,
+                    sender=user,
+                    content=text,
+                    reply_to=reply_to_message,
                 )
-                created_media_files.append(
-                    {
-                        "name": name,
-                        "id": str(media.id),
-                        "file": url,
-                        "kind": kind,
-                    }
-                )
+
+                media_rows = []
+                for attachment in attachments:
+                    url = attachment.get("url")
+                    kind = attachment.get("kind")
+                    name = attachment.get("name")
+                    if not url:
+                        continue
+                    media_rows.append(
+                        MessagesMedia(
+                            message=message,
+                            file=url,
+                            kind=kind,
+                            name=name,
+                        )
+                    )
+
+                if media_rows:
+                    inserted_media = MessagesMedia.objects.bulk_create(media_rows)
+                    created_media_files.extend(
+                        [
+                            {
+                                "name": media.name,
+                                "id": str(media.id),
+                                "file": str(media.file),
+                                "kind": media.kind,
+                            }
+                            for media in inserted_media
+                        ]
+                    )
             created = True
 
         media_files = (
@@ -141,10 +268,16 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
             ]
         )
 
-        return {
+        message_payload = {
             "created": created,
             "conversation_id": str(conversation.id),
             "member_ids": member_ids,
+            "last_message_preview": {
+                "id": str(message.id),
+                "content": message.content or "",
+                "sender_nickname": user.nickname or user.username,
+                "created_at": message.created_at.isoformat(),
+            },
             "message": {
                 "id": str(message.id),
                 "content": message.content,
@@ -161,12 +294,63 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
                     if message.reply_to_id is not None
                     else None
                 ),
+                "client_message_id": str(client_message_id) if client_message_id else None,
             },
         }
 
-    async def notify_conversation_updates(self, conversation_id, member_ids):
+        return message_payload
+
+    def _update_message_cache(
+        self,
+        conversation_id,
+        message_payload,
+    ):
+        cache_key = (
+            f"chat:{conversation_id}:messages:page:1:size:{MESSAGE_PAGE_SIZE}"
+        )
+        try:
+            cached = _redis_client.get(cache_key)
+        except RedisError:
+            return
+
+        if cached:
+            try:
+                page_payload = json.loads(cached)
+            except json.JSONDecodeError:
+                page_payload = {"messages": [], "has_more": False, "next_page": None}
+        else:
+            page_payload = {"messages": [], "has_more": False, "next_page": None}
+
+        messages = page_payload.get("messages") or []
+        messages.append(message_payload)
+
+        overflow = len(messages) - MESSAGE_PAGE_SIZE
+        if overflow > 0:
+            messages = messages[overflow:]
+            page_payload["has_more"] = True
+            page_payload["next_page"] = 2
+        else:
+            page_payload["has_more"] = page_payload.get("has_more", False)
+            page_payload["next_page"] = 2 if page_payload["has_more"] else None
+
+        page_payload["messages"] = messages
+
+        try:
+            _redis_client.setex(
+                cache_key,
+                30,
+                json.dumps(page_payload, default=str),
+            )
+        except RedisError:
+            return
+
+    async def notify_conversation_updates(
+        self, conversation_id, member_ids, last_message_preview=None
+    ):
         payloads = await self.get_conversation_updates_for_members(
-            conversation_id, member_ids
+            conversation_id,
+            member_ids,
+            last_message_preview,
         )
         for member_id, update_payload in payloads.items():
             await self.channel_layer.group_send(
@@ -178,7 +362,9 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
             )
 
     @database_sync_to_async
-    def get_conversation_updates_for_members(self, conversation_id, member_ids):
+    def get_conversation_updates_for_members(
+        self, conversation_id, member_ids, last_message_preview=None
+    ):
         try:
             conversation = (
                 Conversation.objects.filter(id=conversation_id)
@@ -194,12 +380,6 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
             if not target_member_ids:
                 return {}
 
-            last_message = (
-                Message.objects.filter(conversation=conversation)
-                .select_related("sender")
-                .order_by("-created_at")
-                .first()
-            )
             unread_grouped = list(
                 Message.objects.filter(conversation=conversation, is_read=False)
                 .values("sender_id")
@@ -210,27 +390,30 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
             )
             total_unread = sum(unread_by_sender.values())
 
-            sender_name = None
-            last_message_preview = None
-            if last_message:
-                sender_name = (
-                    last_message.sender.nickname
-                    if last_message.sender and last_message.sender.nickname
-                    else (
-                        last_message.sender.username if last_message.sender else "Unknown"
-                    )
+            preview = last_message_preview
+            if preview is None:
+                last_message = (
+                    Message.objects.filter(conversation=conversation)
+                    .select_related("sender")
+                    .order_by("-created_at")
+                    .first()
                 )
-                last_message_preview = {
-                    "id": str(last_message.id),
-                    "content": last_message.content or "",
-                    "sender_nickname": sender_name,
-                    "created_at": last_message.created_at.isoformat(),
-                }
+                if last_message:
+                    sender_name = (
+                        last_message.sender.nickname
+                        if last_message.sender and last_message.sender.nickname
+                        else (
+                            last_message.sender.username if last_message.sender else "Unknown"
+                        )
+                    )
+                    preview = {
+                        "id": str(last_message.id),
+                        "content": last_message.content or "",
+                        "sender_nickname": sender_name,
+                        "created_at": last_message.created_at.isoformat(),
+                    }
 
-            admin_ids = set(
-                str(admin_id)
-                for admin_id in conversation.admins.values_list("id", flat=True)
-            )
+            admin_ids = {str(admin.id) for admin in conversation.admins.all()}
             creator_id = str(conversation.created_by_id) if conversation.created_by_id else None
 
             # Cache the "other user" once for private conversations.
@@ -252,7 +435,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
                     "viewer_is_creator": creator_id == viewer_uuid,
                     "viewer_is_admin": viewer_uuid in admin_ids,
                     "unread_count": unread_count,
-                    "last_message": last_message_preview,
+                    "last_message": preview,
                 }
 
                 if conversation.is_group:
@@ -286,7 +469,9 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, code):
-        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
 
     async def receive_json(self, content, **kwargs):
         msg_type = content.get("type")

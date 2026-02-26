@@ -6,11 +6,21 @@ from .models import User
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
+        identifier = (attrs.get(self.username_field) or "").strip()
+        if identifier:
+            # Allow login by phone number in the same input field.
+            if not User.objects.filter(username=identifier).exists():
+                user_by_phone = User.objects.filter(phone_number=identifier).first()
+                if user_by_phone:
+                    attrs[self.username_field] = user_by_phone.username
+
         data = super().validate(attrs)
         data["user"] = {
             "id": self.user.id,
             "username": self.user.username,
-            "phone_number": self.user.phone_number,
+            "phone_number": (
+                str(self.user.phone_number) if self.user.phone_number else None
+            ),
             "email": self.user.email,
         }
         return data
@@ -39,7 +49,7 @@ class UserSettingsSerializer(ModelSerializer):
             "password": {"write_only": True, "required": False},
             "id": {"read_only": True},
             "email": {"required": False, "allow_blank": True, "allow_null": True},
-            "phone_number": {"required": False, "allow_blank": True, "allow_null": True},
+            "phone_number": {"required": True, "allow_blank": False, "allow_null": False},
             "nickname": {
                 "required": True,
                 "allow_blank": False,

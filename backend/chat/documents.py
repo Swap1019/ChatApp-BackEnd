@@ -8,6 +8,7 @@ class UserDocument(Document):
     id = fields.KeywordField()
     username = fields.TextField()
     nickname = fields.TextField()
+    phone_number = fields.TextField()
     profile_url = fields.TextField()
 
     class Index:
@@ -20,3 +21,8 @@ class UserDocument(Document):
 
     class Django:
         model = User
+
+    def prepare_phone_number(self, instance):
+        if not instance.phone_number:
+            return ""
+        return str(instance.phone_number)
