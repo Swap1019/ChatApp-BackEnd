@@ -1,6 +1,16 @@
 # ChatApp:BackEnd
 
-This is a real-time chat backend built with **Django** and **Django Channels**.
+## 🚀 Project Evolution
+
+This project represents the original MVP of ChatApp, built with **Django** and **Django Channels** to validate real-time communication features.
+
+🔗 Next Generation Backend (.NET):
+https://github.com/Swap1019/ChatApp-BackEnd-API
+
+The project has since been completely rewritten using **.NET** for improved scalability, maintainability, and production readiness.
+
+This Django version remains as a reference implementation and prototype.
+
 
 ## 🔧 Tech Stack
 
